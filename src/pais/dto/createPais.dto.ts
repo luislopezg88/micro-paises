@@ -11,6 +11,10 @@ export class CreatePais {
     @IsString()
     name: string;
 
+    @ApiProperty()
+    @IsNotEmpty()
+    @IsString()
+    alias: string;
     
 
 

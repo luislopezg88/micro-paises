@@ -2,10 +2,12 @@ import { Injectable, ConflictException, Logger, NotFoundException } from '@nestj
 import { InjectModel } from '@nestjs/mongoose';
 import { Span } from 'nestjs-otel';
 import { Model } from 'mongoose';
-import { Pais, PaisDocument } from './entities/pais.entity';
+import { Pais, PaisDocument } from './schemas/pais.schema';
 import { CreatePais } from './dto/createPais.dto';
 import { ResponseCreatedDto } from './dto/responsePais.dto';
 import { UpdatePaisDto } from './dto/updatePais.dto';
+import {ResponsePaisesDTO} from './dto/responsePaises.dto';
+import { response } from 'express';
 
 
 @Injectable()
@@ -33,49 +35,48 @@ export class PaisService {
   }
 
   @Span('GET_ALL_Paises') 
-  async findAll(): Promise<CreatePais[]> {
-    this.logger.log(' >>>> GetAllPaises >>> ');
-    
+async findAll(): Promise<ResponsePaisesDTO[]> {
+  this.logger.log(' >>>> GetAllPaises >>> ');
 
-    const paises = await this.paisModel.find().exec();
-    let responsePaises = new Array<CreatePais>();
+  const paises = await this.paisModel.find().exec();
+  let responsePaises: ResponsePaisesDTO[] = []; 
 
-    paises.forEach(pais => {
-      let responsePais = new CreatePais();
-      responsePais.id = pais._id; 
-      responsePais.name = pais.name;
-     
-      responsePaises.push(responsePais);
-    });
+  paises.forEach(pais => {
+    let responsePais = new ResponsePaisesDTO();
+    responsePais.id = pais._id.toString(); 
+    responsePais.name = pais.name;
+    responsePais.alias = pais.alias;
+   
+    responsePaises.push(responsePais);
+  });
 
-    this.logger.debug('All paises: ' + responsePaises.length);
+  this.logger.debug('All paises: ' + responsePaises.length);
 
-    if (responsePaises.length === 0) {
-      this.logger.warn('No paises found in the collection.');
-    } else {
-      this.logger.debug(`Fetched ${responsePaises.length} paises.`);
-    }
-    return responsePaises;
+  if (responsePaises.length === 0) {
+    this.logger.warn('No paises found in the collection.');
+  } else {
+    this.logger.debug(`Fetched ${responsePaises.length} paises.`);
   }
+  return responsePaises;
+}
 
 
-  @Span('GET_Pais_BY_ID')
-  async findOne(id: string): Promise<ResponseCreatedDto> {
-    this.logger.log(' >>>> GetPaisById >>> ' + id);
-    
+  @Span('GET_Pais_BY_ALIAS')
+  async findByAlias(alias: string): Promise<ResponseCreatedDto> {
+    this.logger.log(' >>>> GetPaisByAlias >>> ' + alias);
 
-    const paisDoc = await this.paisModel.findById(id).exec();
-
+    const paisDoc = await this.paisModel.findOne({ alias: alias }).exec();
     if (!paisDoc) {
       this.logger.warn('Pais not found!');
-      throw new NotFoundException(`Pais with ID '${id}' not found.`);
+      throw new NotFoundException(`Pais with alias '${alias}' not found.`);
     }
 
     this.logger.debug('Document data: ' + JSON.stringify(paisDoc));
 
-    
     let paisDto = new ResponseCreatedDto();
-    paisDto.id = paisDoc._id.toString(); 
+    paisDto.id = paisDoc._id.toString();
+    paisDto.name = paisDoc.name;
+    paisDto.alias = paisDoc.alias; 
 
     return paisDto;
   }
@@ -112,8 +113,8 @@ export class PaisService {
       throw new NotFoundException(`Pais with ID '${id}' not found.`);
     }
 
-    this.logger.debug(`Pais ${id} erased`);
-    return `Pais ${id} erased`;
+    this.logger.debug(`Pais ${id} Delete`);
+    return `Pais ${id} Delete`;
   }
 
 }

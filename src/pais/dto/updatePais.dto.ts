@@ -9,4 +9,9 @@ export class UpdatePaisDto {
     @IsNotEmpty()
     @IsString()
     name: string;
+
+    @ApiProperty()
+    @IsNotEmpty()
+    @IsString()
+    alias: string;
 }
